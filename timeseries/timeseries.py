@@ -1,4 +1,5 @@
 """
+fun with timeseries data
 """
 import numpy as np
 from utils import index_of, prune_lists
@@ -10,89 +11,122 @@ class TimeSeries(object):
 
     Parameters
     ----------
-    use_fv : bool, optional
-        timeseries will return first value if a slice is requested before the first time
-        default False
-
-    interpolate : bool, optional
+    interpolate: bool, optional
         timeseries will interpolate value if a slice is requested at a time that is not in timeseries
         default False
 
+    use_fv: bool, optional
+        timeseries will return first value if a slice is requested before the first time
+        default False
+
+    first_val: any basic python type, optional
+        timeseries slice will return first_val instead of the first value in timeseries if use_fv is False
+        default 0
     """
     def __init__(self, *args, **kwargs):
         if len(args) > 1:
-            self.times = args[0]
-            self.values = args[1]
+            self._times = args[0]
+            self._values = args[1]
         elif isinstance(args[0], list):
-            self.times = [x[0] for x in args[0]]
-            self.values = [x[1] for x in args[0]]
+            self._times = [x[0] for x in args[0]]
+            self._values = [x[1] for x in args[0]]
         elif isinstance(args[0], dict):
-            self.times = sorted(args[0].keys())
-            self.values = [args[0][x] for x in self.times]
+            self._times = sorted(args[0].keys())
+            self._values = [args[0][x] for x in self._times]
         else:
             raise Exception
-        self.use_fv = kwargs.get('use_fv', False)
+
         self.interpolate = kwargs.get('interpolate', False)
+        self.use_fv = kwargs.get('use_fv', False)
         self.first_val = kwargs.get('first_val', 0)
 
+    @property
+    def times(self):
+        return self._times
+
+    @property
+    def values(self):
+        return self._values
+
     def __repr__(self):
-        return 'TimeSeries: {}'.format(zip(self.times, self.values))
+        return 'TimeSeries: {}'.format(zip(self._times, self._values))
 
     def __str__(self):
-        return 'TimeSeries: [{}], [{}]'.format(self.times, self.values)
+        return 'TimeSeries: [{}], [{}]'.format(self._times, self._values)
 
     def __len__(self):
-        return len(self.times)
+        return len(self._times)
 
     def __iter__(self):
-        for time, value in zip(self.times, self.values):
+        for time, value in zip(self._times, self._values):
             yield (time, value)
 
     def __getitem__(self, key):
-        return self._new_slice(self.times, self.values, key)
+        times, values = self._new_slice(self._times, self._values, key)
+        if not isinstance(times, list):
+            return times, values
+        return TimeSeries(times, values,
+                          interpolate=self.interpolate,
+                          use_fv=self.use_fv,
+                          first_val=self.first_val)
 
     def __setitem__(self, time, value):
         # TODO: this feels wrong. dont like exposing a way to mutate the value
-        time_index = index_of(time, self.times)
-        self.values[time_index] = value
+        time_index = index_of(time, self._times)
+        self._values[time_index] = value
 
     def __add__(self, other_timeseries):
         tv = {}
-        for time in self.times + other_timeseries.times:
-            tv[time] = self[time] + other_timeseries[time]
+        for time in self._times + other_timeseries.times:
+            tv[time] = self[time][1] + other_timeseries[time][1]
         times = sorted(tv)
-        return TimeSeries(times, [tv[time] for time in times])
+        return TimeSeries(times, [tv[time] for time in times],
+                          interpolate=self.interpolate,
+                          use_fv=self.use_fv,
+                          first_val=self.first_val)
 
     def __sub__(self, other_timeseries):
         tv = {}
-        for time in self.times + other_timeseries.times:
-            tv[time] = self[time] - other_timeseries[time]
+        for time in self._times + other_timeseries.times:
+            tv[time] = self[time][1] - other_timeseries[time][1]
         times = sorted(tv)
-        return TimeSeries(times, [tv[time] for time in times])
+        return TimeSeries(times, [tv[time] for time in times],
+                          interpolate=self.interpolate,
+                          use_fv=self.use_fv,
+                          first_val=self.first_val)
 
     def __mul__(self, other_timeseries):
         tv = {}
-        for time in self.times + other_timeseries.times:
-            tv[time] = self[time] * other_timeseries[time]
+        for time in self._times + other_timeseries.times:
+            tv[time] = self[time][1] * other_timeseries[time][1]
         times = sorted(tv)
-        return TimeSeries(times, [tv[time] for time in times])
+        return TimeSeries(times, [tv[time] for time in times],
+                          interpolate=self.interpolate,
+                          use_fv=self.use_fv,
+                          first_val=self.first_val)
 
     def __div__(self, other_timeseries):
         tv = {}
-        for time in self.times + other_timeseries.times:
+        for time in self._times + other_timeseries.times:
             try:
-                tv[time] = 1. * self[time] / other_timeseries[time]
+                tv[time] = 1. * self[time][1] / other_timeseries[time][1]
             except ZeroDivisionError:
                 tv[time] = 0
         times = sorted(tv)
-        return TimeSeries(times, [tv[time] for time in times])
+        return TimeSeries(times, [tv[time] for time in times],
+                          interpolate=self.interpolate,
+                          use_fv=self.use_fv,
+                          first_val=self.first_val)
 
     def __and__(self, other_timeseries):
         # TODO: does this make sense, if conflict, take the other_timeseries values
-        tv = dict(zip(self.times, self.values))
+        tv = dict(zip(self._times, self._values))
         tv.update(dict(zip(other_timeseries.times, other_timeseries.values)))
         times = sorted(tv)
-        return TimeSeries(times, [tv[time] for time in times])
+        return TimeSeries(times, [tv[time] for time in times],
+                          interpolate=self.interpolate,
+                          use_fv=self.use_fv,
+                          first_val=self.first_val)
 
     def tilt(self, new_end):
         """
@@ -101,45 +135,79 @@ class TimeSeries(object):
         Parameters
         ----------
         new_end: numeric, required
-            the
+            the new end point of the values of timeseries
         """
-        values = np.array(self.values)
+        values = np.array(self._values)
         start = values[0]
         rise = 1.0 * (new_end - start)
         run = values[-1] - start
         if run:
             new_slope = rise / run
-            self.values = (start + (new_slope * (values - start))).tolist()
+            self._values = (start + (new_slope * (values - start))).tolist()
         new_slope = rise / (len(values) - 1)
-        return TimeSeries(self.times, [start + new_slope * i for i in range(len(values))])
-
-    def prune(self, interval):
-        """
-        keep only the times(and their associated values) that are at least interval distance apart
-        """
-        new_times, new_values = prune_lists(interval, self.times, self.values)
-        return TimeSeries(new_times, new_values)
+        return TimeSeries(self._times, [start + new_slope * i for i in range(len(values))],
+                          interpolate=self.interpolate,
+                          use_fv=self.use_fv,
+                          first_val=self.first_val)
 
     def shift(self, num):
         """
-        shift entire timeseries by num, rightshift if positive, leftshift if negative
+        shift entire timeseries by `num`, rightshift if positive, leftshift if negative
+
+        Parameters
+        ----------
+        num: numeric, required
+            number of steps to shift timeseries over
         """
         if not num:
-            return TimeSeries(self.times, self.values)
+            return TimeSeries(self._times, self._values,
+                              interpolate=self.interpolate,
+                              use_fv=self.use_fv,
+                              first_val=self.first_val)
         if num > 0:
-            return TimeSeries(self.times[num:], self.values[:-num])
-        return TimeSeries(self.times[:num], self.values[-num:])
+            return TimeSeries(self._times[:-num], self._values[num:],
+                              interpolate=self.interpolate,
+                              use_fv=self.use_fv,
+                              first_val=self.first_val)
+        return TimeSeries(self._times[-num:], self._values[:num],
+                          interpolate=self.interpolate,
+                          use_fv=self.use_fv,
+                          first_val=self.first_val)
 
-    def pad(self, interval, interpolate=True, keep_end=False):
+    def prune(self, interval):
         """
-        pad timeseries so that there is a time (and value) at every interval
+        keep only the times(and their associated values) that are at least `interval` distance apart
+
+        Parameters
+        ----------
+        interval: numeric, required
+            the minimum distance between times to be preserved
+        """
+        new_times, new_values = prune_lists(interval, self._times, self._values)
+        return TimeSeries(new_times, new_values,
+                          interpolate=self.interpolate,
+                          use_fv=self.use_fv,
+                          first_val=self.first_val)
+
+    def pad(self, interval, keep_end=False):
+        """
+        pad timeseries so that there is a time(and value) at every interval
         if interpolate, the values will be interpolated, otherwise the previous value will be repeated
+
+        Parameters
+        ----------
+        interval: numeric, required
+            the minimum distance between times to be preserved
+
+        keep_end : bool, optional
+            keep the last time and value of the timeseries, even if its less than `interval` distance from prior time
         """
         padded_times, padded_values = [], []
         prev_time = None
-        last_val = self.values[-1]
-        for i, curr_time in enumerate(self.times):
-            curr_val = self.values[i]
+        last_val = self._values[-1]
+        for i, curr_time in enumerate(self._times):
+            # BUG: this is looking into the future
+            curr_val = self._values[i]
             while prev_time is not None and curr_time - prev_time > interval:
                 prev_time = prev_time + interval
                 if not keep_end or last_val - curr_val >= interval:
@@ -148,18 +216,34 @@ class TimeSeries(object):
             padded_times.append(curr_time)
             padded_values.append(curr_val)
             prev_time = curr_time
-        if interpolate:
-            return TimeSeries(padded_times, np.interp(padded_times, self.times, self.values).tolist())
-        return TimeSeries(padded_times, padded_values)
+        if self.interpolate:
+            values = np.interp(padded_times, self._times, self._values).tolist()
+            return TimeSeries(padded_times, values,
+                              interpolate=self.interpolate,
+                              use_fv=self.use_fv,
+                              first_val=self.first_val)
+        return TimeSeries(padded_times, padded_values,
+                          interpolate=self.interpolate,
+                          use_fv=self.use_fv,
+                          first_val=self.first_val)
 
     def topairs(self):
-        return list(zip(self.times, self.values))
+        """
+        convert timeseries into list [(time1, value1), ..., (timeN, valueN)]
+        """
+        return list(zip(self._times, self._values))
 
     def tolists(self):
-        return self.times, self.values
+        """
+        convert timeseries into lists [[times], [values]]
+        """
+        return self._times, self._values
 
     def todict(self):
-        return {self.times[i]: self.values[i] for i in range(len(self.times))}
+        """
+        convert timeseries into dictionary {time1: value1, ... , timeN: valueN}
+        """
+        return {self._times[i]: self._values[i] for i in range(len(self._times))}
 
     def _new_slice(self, times, values, key):
         """
@@ -169,7 +253,7 @@ class TimeSeries(object):
             start, stop, step = key.start, key.stop, key.step
             if all(x is None for x in [start, stop, step]):
                 # [:] slice, return everything
-                return values
+                return times, values
         except AttributeError:
             start, stop, step = key, False, None
 
@@ -183,8 +267,8 @@ class TimeSeries(object):
         if stop is False:
             # slice only wants one value
             if self.interpolate:
-                return np.interp(start, times, values)
-            return values[start_idx]
+                return start, np.interp(start, times, values)
+            return start, values[start_idx]
 
         stop_idx = index_of(stop, times)
         if not stop or stop > times[stop_idx]:
@@ -196,10 +280,9 @@ class TimeSeries(object):
             slice_times = times[start_idx:stop_idx]
             if step:
                 slice_times, = prune_lists(step, times)
-            return np.interp(slice_times, times, values).tolist()
+            return slice_times, np.interp(slice_times, times, values).tolist()
 
         if step:
-            _, values = prune_lists(step, times[start_idx:stop_idx], values[start_idx:])
-            return values
+            return prune_lists(step, times[start_idx:stop_idx], values[start_idx:])
 
-        return values[start_idx: stop_idx]
+        return times[start_idx:stop_idx], values[start_idx:stop_idx]

@@ -1,0 +1,9 @@
+__pycache__
+*.pyc
+.cache
+.eggs
+test/.coverage
+.coverage
+timeseries.egg-info
+build
+dist

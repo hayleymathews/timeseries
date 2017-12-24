@@ -2,7 +2,7 @@
 fun with timeseries data
 """
 import numpy as np
-from utils import index_of, prune_lists
+from utils import index_of, prune_lists, pad_lists, float_div
 
 
 class TimeSeries(object):
@@ -24,15 +24,13 @@ class TimeSeries(object):
         default 0
     """
     def __init__(self, *args, **kwargs):
+        # TODO: look into faster sorting here
         if len(args) > 1:
-            self._times = args[0]
-            self._values = args[1]
+            self._times, self._values = (list(t) for t in zip(*sorted(zip(args[0], args[1]))))
         elif isinstance(args[0], list):
-            self._times = [x[0] for x in args[0]]
-            self._values = [x[1] for x in args[0]]
+            self._times, self._values = (list(t) for t in zip(*sorted(args[0])))
         elif isinstance(args[0], dict):
-            self._times = sorted(args[0].keys())
-            self._values = [args[0][x] for x in self._times]
+            self._times, self._values = (list(t) for t in zip(*sorted(args[0].items())))
         else:
             raise Exception
 
@@ -51,9 +49,6 @@ class TimeSeries(object):
     def __repr__(self):
         return 'TimeSeries: {}'.format(zip(self._times, self._values))
 
-    def __str__(self):
-        return 'TimeSeries: [{}], [{}]'.format(self._times, self._values)
-
     def __len__(self):
         return len(self._times)
 
@@ -71,55 +66,39 @@ class TimeSeries(object):
                           first_val=self.first_val)
 
     def __setitem__(self, time, value):
-        # TODO: this feels wrong. dont like exposing a way to mutate the value
         time_index = index_of(time, self._times)
         self._values[time_index] = value
 
     def __add__(self, other_timeseries):
-        tv = {}
-        for time in self._times + other_timeseries.times:
-            tv[time] = self[time][1] + other_timeseries[time][1]
-        times = sorted(tv)
-        return TimeSeries(times, [tv[time] for time in times],
+        return TimeSeries({time: self[time][1] + other_timeseries[time][1]
+                           for time in sorted(self._times + other_timeseries.times)},
                           interpolate=self.interpolate,
                           use_fv=self.use_fv,
                           first_val=self.first_val)
 
     def __sub__(self, other_timeseries):
-        tv = {}
-        for time in self._times + other_timeseries.times:
-            tv[time] = self[time][1] - other_timeseries[time][1]
-        times = sorted(tv)
-        return TimeSeries(times, [tv[time] for time in times],
+        return TimeSeries({time: self[time][1] - other_timeseries[time][1]
+                           for time in sorted(self._times + other_timeseries.times)},
                           interpolate=self.interpolate,
                           use_fv=self.use_fv,
                           first_val=self.first_val)
 
     def __mul__(self, other_timeseries):
-        tv = {}
-        for time in self._times + other_timeseries.times:
-            tv[time] = self[time][1] * other_timeseries[time][1]
-        times = sorted(tv)
-        return TimeSeries(times, [tv[time] for time in times],
+        return TimeSeries({time: self[time][1] * other_timeseries[time][1]
+                           for time in sorted(self._times + other_timeseries.times)},
                           interpolate=self.interpolate,
                           use_fv=self.use_fv,
                           first_val=self.first_val)
 
     def __div__(self, other_timeseries):
-        tv = {}
-        for time in self._times + other_timeseries.times:
-            try:
-                tv[time] = 1. * self[time][1] / other_timeseries[time][1]
-            except ZeroDivisionError:
-                tv[time] = 0
-        times = sorted(tv)
-        return TimeSeries(times, [tv[time] for time in times],
+        return TimeSeries({time: float_div(self[time][1], other_timeseries[time][1])
+                           for time in sorted(self._times + other_timeseries.times)},
                           interpolate=self.interpolate,
                           use_fv=self.use_fv,
                           first_val=self.first_val)
 
     def __and__(self, other_timeseries):
-        # TODO: does this make sense, if conflict, take the other_timeseries values
+        # TODO: does this make sense? if conflict, take the other_timeseries values
         tv = dict(zip(self._times, self._values))
         tv.update(dict(zip(other_timeseries.times, other_timeseries.values)))
         times = sorted(tv)
@@ -160,16 +139,12 @@ class TimeSeries(object):
             number of steps to shift timeseries over
         """
         if not num:
-            return TimeSeries(self._times, self._values,
-                              interpolate=self.interpolate,
-                              use_fv=self.use_fv,
-                              first_val=self.first_val)
-        if num > 0:
-            return TimeSeries(self._times[:-num], self._values[num:],
-                              interpolate=self.interpolate,
-                              use_fv=self.use_fv,
-                              first_val=self.first_val)
-        return TimeSeries(self._times[-num:], self._values[:num],
+            times, values = self._times, self._values
+        elif num > 0:
+            times, values = self._times[:-num], self._values[num:]
+        else:
+            times, values = self._times[-num:], self._values[:num]
+        return TimeSeries(times, values,
                           interpolate=self.interpolate,
                           use_fv=self.use_fv,
                           first_val=self.first_val)
@@ -202,27 +177,10 @@ class TimeSeries(object):
         keep_end : bool, optional
             keep the last time and value of the timeseries, even if its less than `interval` distance from prior time
         """
-        padded_times, padded_values = [], []
-        prev_time = None
-        last_val = self._values[-1]
-        for i, curr_time in enumerate(self._times):
-            # BUG: this is looking into the future
-            curr_val = self._values[i]
-            while prev_time is not None and curr_time - prev_time > interval:
-                prev_time = prev_time + interval
-                if not keep_end or last_val - curr_val >= interval:
-                    padded_times.append(prev_time)
-                    padded_values.append(curr_val)
-            padded_times.append(curr_time)
-            padded_values.append(curr_val)
-            prev_time = curr_time
+        new_times, new_values = pad_lists(interval, self._times, self._values, keep_end=keep_end)
         if self.interpolate:
-            values = np.interp(padded_times, self._times, self._values).tolist()
-            return TimeSeries(padded_times, values,
-                              interpolate=self.interpolate,
-                              use_fv=self.use_fv,
-                              first_val=self.first_val)
-        return TimeSeries(padded_times, padded_values,
+            new_values = np.interp(new_times, self._times, self._values).tolist()
+        return TimeSeries(new_times, new_values,
                           interpolate=self.interpolate,
                           use_fv=self.use_fv,
                           first_val=self.first_val)
@@ -257,13 +215,12 @@ class TimeSeries(object):
         except AttributeError:
             start, stop, step = key, False, None
 
-        if start < times[0] and not self.use_fv:
+        if start is not None and start < times[0] and not self.use_fv:
             # add default beginning value to front of list
             times = [start] + times
             values = [self.first_val] + values
 
-        # BUG: [::2] type slice will fail with index_of None returning end of list
-        start_idx = index_of(start, times)
+        start_idx = index_of(start, times, begin=True)
         if stop is False:
             # slice only wants one value
             if self.interpolate:
@@ -276,10 +233,14 @@ class TimeSeries(object):
             stop_idx += 1
 
         if self.interpolate:
-            # BUG: if start/stop not in list this will get the wrong slice times
+            # TODO: figure out a cleaner way to do this
             slice_times = times[start_idx:stop_idx]
+            if start > times[start_idx]:
+                slice_times[0] = start
             if step:
-                slice_times, = prune_lists(step, times)
+                if stop <= times[stop_idx] and stop > slice_times[-1]:
+                    slice_times[-1] = stop
+                slice_times, = prune_lists(step, *pad_lists(1, slice_times))
             return slice_times, np.interp(slice_times, times, values).tolist()
 
         if step:

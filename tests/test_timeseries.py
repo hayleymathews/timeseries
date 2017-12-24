@@ -48,6 +48,9 @@ class TestTimeSeries(TestCase):
         t_slice = t[2:8]
         self.assertEqual(t_slice.times, [2, 4, 6])
         self.assertEqual(t_slice.values, [2, 4, 6])
+        t_slice = t[:6]
+        self.assertEqual(t_slice.times, [2, 4])
+        self.assertEqual(t_slice.values, [2, 4])
 
     def test_range_slice_with_first_val(self):
         t = TimeSeries(range(2, 10, 2), range(2, 10, 2), use_fv=False, first_val=-1)
@@ -59,10 +62,16 @@ class TestTimeSeries(TestCase):
         self.assertEqual(t_slice.values, [-1, 2, 4, 6, 8])
 
     def test_range_slice_with_interpolation(self):
-        pass
-        # TODO: fix bugs in slicer and finish me
-        # t = TimeSeries(range(2, 10, 2), range(2, 10, 2), interpolate=True)
-        # self.assertEqual(t[3:6], [3, 4])
+        t = TimeSeries(range(2, 10, 2), range(2, 10, 2), interpolate=True)
+        t_slice = t[3:6]
+        self.assertEqual(t_slice.times, [3, 4])
+        self.assertEqual(t_slice.values, [3, 4])
+
+    def test_range_slice_with_interpolation_and_step(self):
+        t = TimeSeries(range(2, 10, 2), range(2, 10, 2), interpolate=True)
+        t_slice = t[3:8:2]
+        self.assertEqual(t_slice.times, [3, 5, 7])
+        self.assertEqual(t_slice.values, [3, 5, 7])
 
     def test_range_slice_with_step(self):
         t = TimeSeries(range(0, 10), range(0, 10))
@@ -142,5 +151,10 @@ class TestTimeSeries(TestCase):
 
     def test_pad(self):
         t = TimeSeries(range(0, 5, 2), range(0, 5, 2)).pad(1)
+        self.assertEqual(t.times, [0, 1, 2, 3, 4])
+        self.assertEqual(t.values, [0, 2, 2, 4, 4])
+
+    def test_pad_with_interpolation(self):
+        t = TimeSeries(range(0, 5, 2), range(0, 5, 2), interpolate=True).pad(1)
         self.assertEqual(t.times, [0, 1, 2, 3, 4])
         self.assertEqual(t.values, [0, 1, 2, 3, 4])

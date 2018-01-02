@@ -3,6 +3,7 @@ test timeseries class
 """
 from unittest import TestCase
 from timeseries.timeseries import TimeSeries
+from timeseries import padded, pruned, tilted, shifted
 
 
 class TestTimeSeries(TestCase):
@@ -29,7 +30,7 @@ class TestTimeSeries(TestCase):
         self.assertEqual(t[3], (3, 2))
 
     def test_sincle_slice_with_first_val(self):
-        t = TimeSeries(range(2, 6, 2), range(2, 6, 2), use_fv=False, first_val=-1)
+        t = TimeSeries(range(2, 6, 2), range(2, 6, 2), first_val=-1)
         self.assertEqual(t[0], (0, -1))
         self.assertEqual(t[1], (1, -1))
         self.assertEqual(t[2], (2, 2))
@@ -53,7 +54,7 @@ class TestTimeSeries(TestCase):
         self.assertEqual(t_slice.values, [2, 4])
 
     def test_range_slice_with_first_val(self):
-        t = TimeSeries(range(2, 10, 2), range(2, 10, 2), use_fv=False, first_val=-1)
+        t = TimeSeries(range(2, 10, 2), range(2, 10, 2), first_val=-1)
         t_slice = t[0:6]
         self.assertEqual(t_slice.times, [0, 2, 4])
         self.assertEqual(t_slice.values, [-1, 2, 4])
@@ -120,41 +121,67 @@ class TestTimeSeries(TestCase):
         self.assertEqual(t.values, [0, 0, 1, 2./3, 4./3])
 
     def test_combine(self):
-        t = TimeSeries([0, 2, 4], [0, 2, 4]) & TimeSeries([1, 2, 3], [1, 2, 3])
+        t = TimeSeries([0, 2, 4], [0, 2, 4]) | TimeSeries([1, 2, 3], [1, 2, 3])
         self.assertEqual(t.times,  [0, 1, 2, 3, 4])
         self.assertEqual(t.values, [0, 1, 2, 3, 4])
 
     def test_combine_with_conflicting_value(self):
-        t = TimeSeries([0, 2, 4], [0, 2, 4]) & TimeSeries([1, 2, 3], [1, 100, 3])
+        t = TimeSeries([0, 2, 4], [0, 2, 4]) | TimeSeries([1, 2, 3], [1, 100, 3])
         self.assertEqual(t.times, [0, 1, 2, 3, 4])
         self.assertEqual(t.values, [0, 1, 100, 3, 4])
 
     def test_tilt(self):
-        t = TimeSeries(range(5), range(5)).tilt(8)
+        t = TimeSeries(range(5), range(5))
+        t.tilt(8)
         self.assertEqual(t.times, [0, 1, 2, 3, 4])
         self.assertEqual(t.values, [0, 2, 4, 6, 8])
 
     def test_prune(self):
-        t = TimeSeries(range(5), range(5)).prune(2)
+        t = TimeSeries(range(5), range(5))
+        t.prune(2)
         self.assertEqual(t.times, [0, 2, 4])
         self.assertEqual(t.values, [0, 2, 4])
 
     def test_shift_forwards(self):
-        t = TimeSeries(range(5), range(5)).shift(1)
+        t = TimeSeries(range(5), range(5))
+        t.shift(1)
         self.assertEqual(t.times, [0, 1, 2, 3])
         self.assertEqual(t.values, [1, 2, 3, 4])
 
     def test_shift_backwards(self):
-        t = TimeSeries(range(5), range(5)).shift(-1)
+        t = TimeSeries(range(5), range(5))
+        t.shift(-1)
         self.assertEqual(t.times, [1, 2, 3, 4])
         self.assertEqual(t.values, [0, 1, 2, 3])
 
     def test_pad(self):
-        t = TimeSeries(range(0, 5, 2), range(0, 5, 2)).pad(1)
+        t = TimeSeries(range(0, 5, 2), range(0, 5, 2))
+        t.pad(1)
         self.assertEqual(t.times, [0, 1, 2, 3, 4])
         self.assertEqual(t.values, [0, 2, 2, 4, 4])
 
     def test_pad_with_interpolation(self):
-        t = TimeSeries(range(0, 5, 2), range(0, 5, 2), interpolate=True).pad(1)
+        t = TimeSeries(range(0, 5, 2), range(0, 5, 2), interpolate=True)
+        t.pad(1)
         self.assertEqual(t.times, [0, 1, 2, 3, 4])
         self.assertEqual(t.values, [0, 1, 2, 3, 4])
+
+    def test_padded(self):
+        t = padded(TimeSeries(range(0, 5, 2), range(0, 5, 2)), 1)
+        self.assertEqual(t.times, [0, 1, 2, 3, 4])
+        self.assertEqual(t.values, [0, 2, 2, 4, 4])
+
+    def test_pruned(self):
+        t = pruned(TimeSeries(range(5), range(5)), 2)
+        self.assertEqual(t.times, [0, 2, 4])
+        self.assertEqual(t.values, [0, 2, 4])
+
+    def test_shifted(self):
+        t = shifted(TimeSeries(range(5), range(5)), 1)
+        self.assertEqual(t.times, [0, 1, 2, 3])
+        self.assertEqual(t.values, [1, 2, 3, 4])
+
+    def test_tilted(self):
+        t = tilted(TimeSeries(range(5), range(5)), 8)
+        self.assertEqual(t.times, [0, 1, 2, 3, 4])
+        self.assertEqual(t.values, [0, 2, 4, 6, 8])

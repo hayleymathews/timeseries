@@ -7,6 +7,14 @@ def index_of(val, array, begin=False):
     """
     returns index in presorted array where val would be inserted (to left)
 
+    Parameters
+    ----------
+    val: numeric, required
+        the value to find the index of
+
+    array : list, required
+        a sorted list
+
     >>> index_of(3, [1, 2, 3, 4, 5])
     2
     """
@@ -103,3 +111,26 @@ def float_div(num, denom):
         return 1. * num / denom
     except ZeroDivisionError:
         return 0
+
+
+def merge_nested_dicts(dict1, dict2):
+    """
+    merge two nested dictionaries together
+    """
+    for key in dict2:
+        if key in dict1 and isinstance(dict1[key], dict) and isinstance(dict2[key], dict):
+            merge_nested_dicts(dict1[key], dict2[key])
+        else:
+            dict1[key] = dict2[key]
+    return dict1
+
+def combine_dicts(dict1, dict2, op_values, operators):
+    """
+    combine two dictionaries
+    """
+    dict1 = {k: v for k, v in dict1.iteritems()}
+    dict2 = {k: v for k, v in dict2.iteritems()}
+    new_dict = merge_nested_dicts(dict1, dict2)
+    for (op_val, operator) in zip(op_values, operators):
+        new_dict[op_val] = operator(dict1.get(op_val, 0), dict2.get(op_val, 0))
+    return new_dict

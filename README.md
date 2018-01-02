@@ -13,7 +13,6 @@ create timeseries from lists, tuples, or dictionaries
 TimeSeries will sort all entries based on time
 
 ```
-python
 >>> from timeseries.timeseries import TimeSeries
 >>> t1 = TimeSeries([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
 >>> t2 = TimeSeries([(0, 0), (5, 5), (2, 2), (3, 3), (4, 4), (1, 1)])
@@ -32,7 +31,7 @@ slices after the last time return the last value
 range slices return a new TimeSeries object
 
 ```
-python
+>>> from timeseries.timeseries import TimeSeries
 >>> t1 = TimeSeries([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
 >>> t1[1]
 (1, 1)
@@ -48,7 +47,7 @@ TimeSeries: [(1, 1), (3, 3)]
 slicing will work for any data type that supports addition, subtraction, and value comparison
 
 ```
-python
+>>> from timeseries.timeseries import TimeSeries
 >>> t2 = TimeSeries([date(2018, 1, 1), date(2018, 1, 6), date(2018, 1, 3), date(2018, 1, 4), date(2018, 1, 5), date(2018, 1, 2)], [1, 6, 3, 4, 5, 2])
 >>> t2[date(2018, 1, 2)]
 (datetime.date(2018, 1, 2), 2)
@@ -61,7 +60,7 @@ TimeSeries: [(datetime.date(2018, 1, 2), 2), (datetime.date(2018, 1, 4), 4), (da
 slicing also supports interpolation
 
 ```
-python
+>>> from timeseries.timeseries import TimeSeries
 >>> t3 = TimeSeries([0, 2, 4, 6, 8], [0, 2, 4, 6, 8], interpolate=True)
 >>> t3[1]
 (1, 1.0)
@@ -71,7 +70,7 @@ TimeSeries: [(1, 1.0), (3, 3.0), (5, 5.0), (7, 7.0)]
 
 #### operators
 ```
-python
+>>> from timeseries.timeseries import TimeSeries
 >>> t1 = TimeSeries([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
 >>> t2 = TimeSeries([0, 2, 4, 6, 8], [0, 2, 4, 6, 8])
 >>> t1 + t2
@@ -89,7 +88,7 @@ TimeSeries: [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (8, 8)]
 
 #### mutators
 ```
-python
+>>> from timeseries.timeseries import TimeSeries
 >>> from timeseries import tilted, padded, pruned, shifted
 >>> t1 = TimeSeries([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
 >>> t2 = TimeSeries([0, 2, 4, 6, 8], [0, 2, 4, 6, 8])
@@ -115,7 +114,7 @@ TimeSeries: [(0, 2), (1, 3), (2, 4), (3, 5)]
 
 #### utilities
 ```
-python
+>>> from timeseries.timeseries import TimeSeries
 >>> t1 = TimeSeries([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
 >>> t1.times
 [0, 1, 2, 3, 4, 5]

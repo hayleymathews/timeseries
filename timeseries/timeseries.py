@@ -8,7 +8,7 @@ tilt/shift/prune/pad should be in place operations
 tilted, shifted, pruned, padded can be like sorted and create a new copy
 """
 import numpy as np
-from utils import index_of, prune_lists, pad_lists, float_div
+from utils import index_of, pad_lists, float_div
 
 
 class TimeSeries(object):
@@ -70,8 +70,11 @@ class TimeSeries(object):
                           first_val=self.first_val)
 
     def __setitem__(self, time, value):
-        time_index = index_of(time, self._times)
-        self._values[time_index] = value
+        if time in self._times:
+            time_index = index_of(time, self._times)
+            self._values[time_index] = value
+        else:
+            raise Exception('time not in timeseries')
 
     def __eq__(self, other_timeseries):
         return self.times == other_timeseries.times and self.values == other_timeseries.values
@@ -140,7 +143,7 @@ class TimeSeries(object):
         else:
             self._times, self._values = self._times[-num:], self._values[:num]
 
-    def prune(self, interval):
+    def prune(self, interval, keep_end=False):
         """
         keep only the times(and their associated values) that are at least `interval` distance apart
 
@@ -148,8 +151,11 @@ class TimeSeries(object):
         ----------
         interval: numeric, required
             the minimum distance between times to be preserved
+
+        keep_end : bool, optional
+            keep the last time and value of the timeseries, even if its less than `interval` distance from prior time
         """
-        self._times, self._values = prune_lists(interval, self._times, self._values)
+        self._times, self._values = pad_lists(interval, self._times, self._values, keep_end=keep_end)
 
     def pad(self, interval, keep_end=False):
         """
@@ -216,23 +222,21 @@ class TimeSeries(object):
                 return start, np.interp(start, times, values)
             return start, values[start_idx]
 
-        stop_idx = index_of(stop, times)
-        if not stop or stop > times[stop_idx]:
-            # hack to include the last value if at end of list
+        times, values = times[start_idx:], values[start_idx:]
+        slice_times, slice_values = [x for x in times], [x for x in values]
+        if start > slice_times[0]:
+            # reset first time in slice_times
+            slice_times[0] = start
+
+        if step:
+            slice_times, slice_values = pad_lists(step, slice_times, slice_values, keep_dist=True)
+
+        stop_idx = index_of(stop, slice_times)
+        if not stop or stop > slice_times[stop_idx]:
+            # hack to include the last value if stop is past the end of list
             stop_idx += 1
 
         if self.interpolate:
-            # TODO: figure out a cleaner way to do this
-            slice_times = times[start_idx:stop_idx]
-            if start > times[start_idx]:
-                slice_times[0] = start
-            if step:
-                if stop <= times[stop_idx] and stop > slice_times[-1]:
-                    slice_times[-1] = stop
-                slice_times, = prune_lists(step, *pad_lists(1, slice_times))
-            return slice_times, np.interp(slice_times, times, values).tolist()
+            return slice_times[:stop_idx], np.interp(slice_times[:stop_idx], times, values).tolist()
 
-        if step:
-            return prune_lists(step, times[start_idx:stop_idx], values[start_idx:])
-
-        return times[start_idx:stop_idx], values[start_idx:stop_idx]
+        return slice_times[:stop_idx], slice_values[:stop_idx]

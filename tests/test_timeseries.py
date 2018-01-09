@@ -73,12 +73,19 @@ class TestTimeSeries(TestCase):
         t_slice = t[3:8:2]
         self.assertEqual(t_slice.times, [3, 5, 7])
         self.assertEqual(t_slice.values, [3, 5, 7])
+        t_slice = t[3:7:2]
+        self.assertEqual(t_slice.times, [3, 5])
+        self.assertEqual(t_slice.values, [3, 5])
 
     def test_range_slice_with_step(self):
         t = TimeSeries(range(0, 10), range(0, 10))
         t_slice = t[0:8:2]
         self.assertEqual(t_slice.times, [0, 2, 4, 6])
         self.assertEqual(t_slice.values, [0, 2, 4, 6])
+        t = TimeSeries(range(2, 10, 2), range(2, 10, 2))
+        t_slice = t[3:7:2]
+        self.assertEqual(t_slice.times, [3, 5])
+        self.assertEqual(t_slice.values, [2, 4])
 
     def test_aligned_add(self):
         t = TimeSeries(range(5), range(5)) + TimeSeries(range(5), range(5))
@@ -158,7 +165,7 @@ class TestTimeSeries(TestCase):
         t = TimeSeries(range(0, 5, 2), range(0, 5, 2))
         t.pad(1)
         self.assertEqual(t.times, [0, 1, 2, 3, 4])
-        self.assertEqual(t.values, [0, 2, 2, 4, 4])
+        self.assertEqual(t.values, [0, 0, 2, 2, 4])
 
     def test_pad_with_interpolation(self):
         t = TimeSeries(range(0, 5, 2), range(0, 5, 2), interpolate=True)
@@ -169,7 +176,7 @@ class TestTimeSeries(TestCase):
     def test_padded(self):
         t = padded(TimeSeries(range(0, 5, 2), range(0, 5, 2)), 1)
         self.assertEqual(t.times, [0, 1, 2, 3, 4])
-        self.assertEqual(t.values, [0, 2, 2, 4, 4])
+        self.assertEqual(t.values, [0, 0, 2, 2, 4])
 
     def test_pruned(self):
         t = pruned(TimeSeries(range(5), range(5)), 2)

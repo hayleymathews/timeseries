@@ -14,6 +14,8 @@ from utils import index_of, pad_lists, float_div
 class TimeSeries(object):
     """
     class to provide basic functionality for working with timeseries data
+    getting/setting/slicing in roughly O(log n) time where n is the number of entries
+    adding/multiplying/subtracting/dividing in O(n log n)
 
     Parameters
     ----------

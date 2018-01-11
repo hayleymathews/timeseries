@@ -20,6 +20,8 @@ k was unchanged since its last entry, and so is still 2, we dont care about by s
 
 should do its best to keep log n for slicing. it ... does not do that right now
 
+inserts -
+
 """
 from timeseries import TimeSeries
 from utils import combine_dicts, float_div, index_of, pad_lists
@@ -64,17 +66,18 @@ class TimeSeriesDict(TimeSeries):
         self.first_val = kwargs.get('first_val', 0)
         self.val_keys = kwargs.get('val_keys', ['v'])
         self._times, self._values = [None] * len(ts_iter), [None] * len(ts_iter)
-        self._dict = defaultdict(lambda: ([], []))
 
-        # TODO: this is a crappy implementaton
-        # kills the benefit of having sparse data in order to get single slices accurate
-        # and slices are slow because it has to slice each of these
+        # option 2
+        # edits underlying data. also a bit gross.
+        # but more performant
+        # and no need to change slicing method
+        # still wonky with first_val false. will return nothing instead of first_val
+        prev_val = {key: self.first_val for key in self.val_keys} if self.first_val is not False else {}
         for i, (ts, val) in enumerate(ts_iter):
-            self._times[i], self._values[i] = ts, val
-            for k, v in val.iteritems():
-                if k in self.val_keys:
-                    self._dict[k][0].append(ts)
-                    self._dict[k][1].append(v)
+            self._times[i] = ts
+            self._values[i] = {k: v for k, v in prev_val.items() + val.items()}
+            #  TODO: really dont like that im iterating through twice.
+            prev_val.update({k: v for k, v in val.iteritems() if k in self.val_keys})
 
     def __getitem__(self, key):
         times, values = self._new_slice(self._times, self._values, key)
@@ -116,34 +119,6 @@ class TimeSeriesDict(TimeSeries):
                               interpolate=self.interpolate,
                               first_val=self.first_val,
                               val_keys=self.val_keys)
-
-    def _new_slice(self, times, values, key):
-        """
-        slicing functionality for timeseries
-        """
-        # TODO: yikes.
-        try:
-            start, stop, step = key.start, key.stop, key.step
-            if all(x is None for x in [start, stop, step]):
-                # [:] slice, return everything
-                return times, values
-        except AttributeError:
-            start, stop, step = key, False, None
-
-        start_idx = index_of(start, times, begin=True)
-        if stop is False:
-            slice_dict = values[start_idx]
-            for key_val, (times, values) in self._dict.iteritems():
-                if start is not None and start < times[0] and self.first_val is not False:
-                    # add default beginning value to front of list
-                    times = [start] + times
-                    values = [self.first_val] + values
-                if self.interpolate:
-                    slice_dict[key_val] = np.interp(start, times, values)
-                else:
-                    slice_dict[key_val] = values[index_of(start, times, begin=True)]
-            return start, slice_dict
-        raise NotImplementedError
 
     def _times_values_op(self, other_timeseries, op):
         """

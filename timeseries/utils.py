@@ -5,7 +5,8 @@ helper functions for timeseries
 
 def index_of(val, array, begin=False):
     """
-    returns index in presorted array where val would be inserted (to left)
+    returns index in sorted array where val would be inserted (to left)
+    binary search, runs in O(log n)
 
     Parameters
     ----------
@@ -14,6 +15,11 @@ def index_of(val, array, begin=False):
 
     array : list, required
         a sorted list
+
+    begin: bool, optional
+        if val is None and begin is True, will return index as 0 (beginning of list)
+        otherwise if val is None, returns max index
+        default False
 
     >>> index_of(3, [1, 2, 3, 4, 5])
     2

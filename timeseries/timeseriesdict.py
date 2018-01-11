@@ -75,9 +75,11 @@ class TimeSeriesDict(TimeSeries):
         prev_val = {key: self.first_val for key in self.val_keys} if self.first_val is not False else {}
         for i, (ts, val) in enumerate(ts_iter):
             self._times[i] = ts
-            self._values[i] = {k: v for k, v in prev_val.items() + val.items()}
-            #  TODO: really dont like that im iterating through twice.
-            prev_val.update({k: v for k, v in val.iteritems() if k in self.val_keys})
+            self.values[i] = {}
+            for k, v in prev_val.items() + val.items():
+                self._values[i][k] = v
+                if k in self.val_keys:
+                    prev_val[k] = v
 
     def __getitem__(self, key):
         times, values = self._new_slice(self._times, self._values, key)

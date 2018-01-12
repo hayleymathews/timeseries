@@ -168,7 +168,7 @@ class TimeSeries(object):
         """
         new_times, new_values = pad_lists(interval, self._times, self._values, keep_end=keep_end)
         if self.interpolate:
-            new_values = np.interp(new_times, self._times, self._values).tolist()
+            new_values = self._interpolate(new_times, self._times, self._values)
         self._times, self._values = new_times, new_values
 
     def topairs(self):

@@ -130,3 +130,17 @@ TimeSeries: [(0, 0), (1, 1), (2, 8), (3, 3), (4, 4), (5, 5)]
 >>> t1.todict()
 {0: 0, 1: 1, 2: 8, 3: 3, 4: 4, 5: 5}
 ```
+
+
+### timeseries dictionaries (work in progress)
+```
+>>> from timeseries.timeseriesdict import TimeSeriesDict
+>>> t1 = TimeSeriesDict([1, 2, 3], [{'v': 1}, {'v': 2}, {'v': 3}])
+>>> t1 + t1
+TimeSeries: [(1, {'v': 2}), (2, {'v': 4}), (3, {'v': 6})]
+>>> t2 = TimeSeriesDict([0, 2, 4], [{'v': 0, 'k': 1}, {'v': 2, 'k': 3}, {'v': 4, 'k': 5}], interpolate=True, val_keys=['v', 'k'])
+>>> t2[1]
+(1, {'k': 2.0, 'v': 1.0})
+>>> t2[1:4:2]
+TimeSeries: [(1, {'k': 2.0, 'v': 1.0}), (3, {'k': 4.0, 'v': 3.0})]
+```

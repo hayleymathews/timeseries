@@ -1,11 +1,5 @@
 """
 fun with timeseries data
-
-
-TODO:
-to more closer match lists/tuple implementations
-tilt/shift/prune/pad should be in place operations
-tilted, shifted, pruned, padded can be like sorted and create a new copy
 """
 import numpy as np
 from utils import index_of, pad_lists, float_div
@@ -221,7 +215,7 @@ class TimeSeries(object):
         if stop is False:
             # slice only wants one value
             if self.interpolate:
-                return start, np.interp(start, times, values)
+                return start, self._interpolate(start, times, values)
             return start, values[start_idx]
 
         times, values = times[start_idx:], values[start_idx:]
@@ -239,6 +233,11 @@ class TimeSeries(object):
             stop_idx += 1
 
         if self.interpolate:
-            return slice_times[:stop_idx], np.interp(slice_times[:stop_idx], times, values).tolist()
+            return slice_times[:stop_idx], self._interpolate(slice_times[:stop_idx], times, values)
 
         return slice_times[:stop_idx], slice_values[:stop_idx]
+
+    def _interpolate(self, interp_times, times, values):
+        if isinstance(interp_times, list):
+            return np.interp(interp_times, times, values).tolist()
+        return np.interp(interp_times, times, values)

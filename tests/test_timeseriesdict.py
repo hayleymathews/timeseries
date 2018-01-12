@@ -21,8 +21,17 @@ class TestTimeSeries(TestCase):
                                      {'by': 'you', 'v': 7}, {'v': 9, 'by': 'me'}])
 
     def test_single_slice(self):
-        t = TimeSeriesDict([0, 1, 2], [{'v': 1, 'by': 'me'}, {'v': 2, 'k': 2, 'by': 'you'}, {'v': 3}],
+        t = TimeSeriesDict([1, 2, 3], [{'v': 1, 'by': 'me'}, {'v': 2, 'k': 2, 'by': 'you'}, {'v': 3}],
                            val_keys=['v', 'k'])
-        self.assertEqual(t[0], (0, {'k': 0, 'by': 'me', 'v': 1}))
-        self.assertEqual(t[1], (1, {'k': 2, 'by': 'you', 'v': 2}))
-        self.assertEqual(t[2], (2, {'k': 2, 'v': 3}))
+        self.assertEqual(t[0], (0, {'v': 0, 'k': 0}))
+        self.assertEqual(t[1], (1, {'k': 0, 'by': 'me', 'v': 1}))
+        self.assertEqual(t[2], (2, {'k': 2, 'by': 'you', 'v': 2}))
+        self.assertEqual(t[3], (3, {'k': 2, 'v': 3}))
+
+    def test_slice_with_interpolation(self):
+        t = TimeSeriesDict(range(0, 6, 2), [{'v': 0, 'k': 1}, {'v': 2, 'k': 3}, {'v': 4, 'k': 5}],
+                           interpolate=True, val_keys=['v', 'k'])
+        self.assertEqual(t[1], (1, {'k': 2.0, 'v': 1.0}))
+        t_slice = t[1:4:2]
+        self.assertEqual(t_slice.times, [1, 3])
+        self.assertEqual(t_slice.values, [{'k': 2.0, 'v': 1.0}, {'k': 4.0, 'v': 3.0}])

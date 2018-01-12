@@ -18,10 +18,6 @@ so t[2] = (2, {'v': 3,
 k was unchanged since its last entry, and so is still 2, we dont care about by so it didnt pad out..
 
 
-should do its best to keep log n for slicing. it ... does not do that right now
-
-inserts -
-
 """
 from timeseries import TimeSeries
 from utils import combine_dicts, float_div, index_of, pad_lists
@@ -63,16 +59,15 @@ class TimeSeriesDict(TimeSeries):
             raise Exception
 
         self.interpolate = kwargs.get('interpolate', False)
-        self.first_val = kwargs.get('first_val', 0)
         self.val_keys = kwargs.get('val_keys', ['v'])
+        self.first_val = kwargs.get('first_val', {key: 0 for key in self.val_keys})
         self._times, self._values = [None] * len(ts_iter), [None] * len(ts_iter)
 
-        # option 2
         # edits underlying data. also a bit gross.
         # but more performant
         # and no need to change slicing method
         # still wonky with first_val false. will return nothing instead of first_val
-        prev_val = {key: self.first_val for key in self.val_keys} if self.first_val is not False else {}
+        prev_val = {k: v for k, v in self.first_val.iteritems()} if self.first_val is not False else {}
         for i, (ts, val) in enumerate(ts_iter):
             self._times[i] = ts
             self.values[i] = {}
@@ -133,3 +128,21 @@ class TimeSeriesDict(TimeSeries):
             s_values, o_values = self[time][1], other_timeseries[time][1]
             tv[time] = combine_dicts(s_values, o_values, val_keys, op_list)
         return tv
+
+    def _interpolate(self, interp_times, times, values):
+        # TODO: there has to be a better way to do this
+        # TODO: also not properly handling the non val_keys values
+        if isinstance(interp_times, list):
+            interped_values = [None] * len(interp_times)
+            for val in self.val_keys:
+                for i, x in enumerate(np.interp(interp_times, times, [x.get(val) for x in values]).tolist()):
+                    try:
+                        interped_values[i][val] = x
+                    except TypeError:
+                        interped_values[i] = {}
+                        interped_values[i][val] = x
+            return interped_values
+        interped_val = {}
+        for val in self.val_keys:
+            interped_val[val] = np.interp(interp_times, times, [x.get(val) for x in values])
+        return interped_val

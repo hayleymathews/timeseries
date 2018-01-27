@@ -1,6 +1,8 @@
 """
 TODO: better module organization
 """
+from timeseries import TimeSeries
+from timeseriesdict import TimeSeriesDict
 
 
 def tilted(timeseries, new_end):

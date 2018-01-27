@@ -13,7 +13,7 @@ create timeseries from lists, tuples, or dictionaries
 TimeSeries will sort all entries based on time
 
 ```
->>> from timeseries.timeseries import TimeSeries
+>>> from timeseries import *
 >>> t1 = TimeSeries([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
 >>> t2 = TimeSeries([(0, 0), (5, 5), (2, 2), (3, 3), (4, 4), (1, 1)])
 >>> t3 = TimeSeries({0: 0, 5: 5, 2: 2, 3: 3, 4: 4, 1: 1})
@@ -31,7 +31,7 @@ slices after the last time return the last value
 range slices return a new TimeSeries object
 
 ```
->>> from timeseries.timeseries import TimeSeries
+>>> from timeseries import *
 >>> t1 = TimeSeries([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
 >>> t1[1]
 (1, 1)
@@ -47,7 +47,7 @@ TimeSeries: [(1, 1), (3, 3)]
 slicing will work for any data type that supports addition, subtraction, and value comparison
 
 ```
->>> from timeseries.timeseries import TimeSeries
+>>> from timeseries import *
 >>> t2 = TimeSeries([date(2018, 1, 1), date(2018, 1, 6), date(2018, 1, 3), date(2018, 1, 4), date(2018, 1, 5), date(2018, 1, 2)], [1, 6, 3, 4, 5, 2])
 >>> t2[date(2018, 1, 2)]
 (datetime.date(2018, 1, 2), 2)
@@ -60,7 +60,7 @@ TimeSeries: [(datetime.date(2018, 1, 2), 2), (datetime.date(2018, 1, 4), 4), (da
 slicing also supports interpolation
 
 ```
->>> from timeseries.timeseries import TimeSeries
+>>> from timeseries import *
 >>> t3 = TimeSeries([0, 2, 4, 6, 8], [0, 2, 4, 6, 8], interpolate=True)
 >>> t3[1]
 (1, 1.0)
@@ -70,7 +70,7 @@ TimeSeries: [(1, 1.0), (3, 3.0), (5, 5.0), (7, 7.0)]
 
 #### operators
 ```
->>> from timeseries.timeseries import TimeSeries
+>>> from timeseries import *
 >>> t1 = TimeSeries([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
 >>> t2 = TimeSeries([0, 2, 4, 6, 8], [0, 2, 4, 6, 8])
 >>> t1 + t2
@@ -88,8 +88,7 @@ TimeSeries: [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (8, 8)]
 
 #### mutators
 ```
->>> from timeseries.timeseries import TimeSeries
->>> from timeseries import tilted, padded, pruned, shifted
+>>> from timeseries import *
 >>> t1 = TimeSeries([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
 >>> t2 = TimeSeries([0, 2, 4, 6, 8], [0, 2, 4, 6, 8])
 >>> t3 = TimeSeries([0, 2, 4, 6, 8], [0, 2, 4, 6, 8], interpolate=True)
@@ -114,7 +113,7 @@ TimeSeries: [(0, 2), (1, 3), (2, 4), (3, 5)]
 
 #### utilities
 ```
->>> from timeseries.timeseries import TimeSeries
+>>> from timeseries import *
 >>> t1 = TimeSeries([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5])
 >>> t1.times
 [0, 1, 2, 3, 4, 5]
@@ -134,7 +133,7 @@ TimeSeries: [(0, 0), (1, 1), (2, 8), (3, 3), (4, 4), (5, 5)]
 
 ### timeseries dictionaries (work in progress)
 ```
->>> from timeseries.timeseriesdict import TimeSeriesDict
+>>> from timeseries import *
 >>> t1 = TimeSeriesDict([1, 2, 3], [{'v': 1}, {'v': 2}, {'v': 3}])
 >>> t1 + t1
 TimeSeries: [(1, {'v': 2}), (2, {'v': 4}), (3, {'v': 6})]
